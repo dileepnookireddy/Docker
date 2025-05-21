@@ -1,0 +1,81 @@
+Docker Storage:
+---------------
+ Let's walk through Docker Storage — how it works, types of storage, and how to use it effectively in real-world containers.
+
+✅ What Is Docker Storage?
+Docker containers are ephemeral by default — data written inside a container is lost if the container is deleted.
+To persist data, Docker provides several storage mechanisms.
+
+🔥 Main Docker Storage Types
+Type	                       Description	                                              Use Case
+Volumes	         Managed by Docker under /var/lib/docker/volumes	          Most common for persistent data (e.g. databases)
+Bind Mounts	     Mounts a host path into the container	                    Use when you need host access (e.g. logs, configs)
+tmpfs	           Temporary in-memory storage	                              For sensitive or transient data
+
+✅ 1. Docker Volumes (Recommended)
+🔹 Create and Use:
+
+docker volume create mydata
+
+docker run -d \
+  --name mycontainer \
+  -v mydata:/data \
+  nginx
+
+---> Data inside /data in the container is stored in the Docker volume.
+
+🔹 List Volumes:
+docker volume ls
+
+✅ 2. Bind Mounts
+Mount a directory from the host into the container.
+
+docker run -d \
+  --name web \
+  -v /host/path:/usr/share/nginx/html \
+  nginx
+
+---> Changes on host reflect immediately inside the container.
+
+✅ 3. tmpfs Mounts (In-memory only)
+
+docker run -d \
+  --name temp \
+  --tmpfs /app/tmp \
+  nginx
+
+--> Fast and temporary. Data disappears after container stops.
+
+🧠 Advanced: Use in docker-compose.yml
+
+version: '3.8'
+services:
+  db:
+    image: mysql
+    volumes:
+      - dbdata:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: pass123
+
+volumes:
+  dbdata:
+
+---> Here, dbdata is a named volume, stored persistently.
+
+✅ Inspecting Storage
+🔹 Volume Details:
+docker volume inspect mydata
+
+🔹 Check Usage:
+du -sh /var/lib/docker/volumes/mydata/_data
+
+✅ When to Use What?
+
+Use Case	               Best Option
+Persistent DB Data    	 Volumes
+Sharing Host Configs     Bind Mounts
+In-Memory Cache	         tmpfs
+
+---------------------------------
+
+
