@@ -1,0 +1,113 @@
+Docker Engine --> Docker CLI, Rest API, Docker Daemon 
+
+
+
+
+------------------------------------------------------------------------------------
+✅ What are cgroups in Docker?
+
+cgroups (control groups) are a Linux kernel feature used by Docker to limit, isolate, and monitor:
+ CPU usage
+ Memory usage
+ Disk I/O
+ Network bandwidth
+ Process limits (PIDs)
+--> Docker relies on cgroups to enforce resource constraints per container.
+
+✅ Why cgroups are Important in Docker
+They help:
+Prevent a single container from consuming all system resources.
+Isolate containers from each other.
+Enforce performance boundaries.
+
+✅ Example Use Cases
+🔹 Limit Memory:
+docker run -d --name test1 --memory="200m" alpine sleep 1000
+Limits the container to 200MB RAM.
+
+🔹 Limit CPU:
+docker run -d --name test2 --cpus="0.5" alpine sleep 1000
+Limits the container to use 50% of one CPU core.
+
+🔹 Limit PIDs:
+docker run -d --name test3 --pids-limit=100 ubuntu sleep 1000
+Limits the number of processes (PIDs) the container can spawn.
+
+✅ How cgroups Work (Behind the Scenes)
+When you run a Docker container with resource limits, Docker:
+
+1.Uses the cgroup subsystem (via the container runtime, like runc)
+2.Creates entries under /sys/fs/cgroup/
+3.Applies constraints like:
+   /sys/fs/cgroup/memory/docker/<container-id>/memory.limit_in_bytes
+   /sys/fs/cgroup/cpu/docker/<container-id>/cpu.shares
+
+✅ View cgroup Usage for a Container
+You can inspect a running container:
+   docker inspect <container-id>
+   
+Look for:
+1.HostConfig.Memory
+2.HostConfig.CpuShares
+3.HostConfig.PidsLimit
+
+Or check cgroup filesystem directly:
+
+cat /sys/fs/cgroup/memory/docker/<container-id>/memory.usage_in_bytes
+
+🧠 Advanced Tip
+You can use cgroup v2 (unified hierarchy) on newer kernels (e.g., Ubuntu 20.04+), which simplifies resource management.
+
+--------------------------------------
+ Let's now see how Kubernetes uses cgroups behind the scenes to manage resource limits in pods and containers.
+
+✅ How Kubernetes Uses cgroups
+Kubernetes does not directly configure cgroups — instead, it passes resource constraints (CPU, memory, etc.) to the container runtime (e.g., containerd, Docker, CRI-O), which uses Linux cgroups to enforce them.
+
+✅ Example Pod Spec with Resource Requests and Limits
+yaml
+Copy
+Edit
+apiVersion: v1
+kind: Pod
+metadata:
+  name: resource-limited-pod
+spec:
+  containers:
+    - name: app-container
+      image: nginx
+      resources:
+        requests:
+          memory: "128Mi"
+          cpu: "250m"
+        limits:
+          memory: "256Mi"
+          cpu: "500m"
+
+🔍 Breakdown:
+Resource	Request	          Limit
+CPU     	250m (0.25 core)	500m (0.5 core)
+Memory	   128Mi	          256Mi
+
+--> Requests: Kubernetes scheduler uses this to schedule the pod on a node with enough free resources.
+--> Limits: Enforced at runtime using cgroups.
+
+✅ View cgroup usage in a running pod
+If you're on the node, and want to inspect cgroups for a container:
+   1. Get container ID:
+        crictl ps | grep resource-limited-pod
+   2.Inspect the cgroup filesystem:
+        cat /sys/fs/cgroup/memory/kubepods.slice/.../memory.limit_in_bytes
+
+🧠 Fun Fact:
+  CPU limit → translates to CPU quota in cgroup.
+  Memory limit → applies to cgroup memory controller. 
+  No memory limit? Container can use all available memory.
+
+✅ Bonus: Use kubectl top
+You can also monitor usage with:
+kubectl top pod resource-limited-pod
+Shows current CPU/Memory usage vs. limits.
+
+
+
