@@ -77,5 +77,68 @@ Sharing Host Configs     Bind Mounts
 In-Memory Cache	         tmpfs
 
 ---------------------------------
+Storage Drivers:
+-----------------
+Let's explore Docker Storage Drivers — a foundational component of how Docker manages image layers and container filesystems.
 
+✅ What are Docker Storage Drivers?
+A storage driver is how Docker reads and writes container data to disk — including images, layers, and container writable layers.
 
+It handles:
+   --> Layering of images
+   --> Copy-on-write operations
+   --> Managing the container's file system
+
+🔥 Common Docker Storage Drivers:
+-------------------------------------------------------------------------------------------
+| Driver           | Platform                  | Notes                                     |
+| ---------------- | ------------------------- | ----------------------------------------- |
+| **overlay2**     | Most modern Linux distros | Default for most recent Docker versions   |
+| **aufs**         | Older Ubuntu versions     | Deprecated, replaced by `overlay2`        |
+| **devicemapper** | RHEL/CentOS               | Deprecated as well                        |
+| **btrfs**        | Btrfs filesystem required | Advanced snapshotting                     |
+| **zfs**          | ZFS needed                | Robust, high-performance                  |
+| **vfs**          | Any                       | No layering, mostly for testing/debugging |
+
+✅ How to Check Which Driver Docker Is Using
+Run:
+
+docker info | grep Storage
+
+Example output:
+Storage Driver: overlay2
+
+🔍 How overlay2 Works
+    --> Uses Linux OverlayFS.
+    --> Combines lower (read-only) and upper (read-write) layers into a single unified view.
+    --> Efficient and fast for most workloads.
+
+✅ How to Specify a Storage Driver (if needed)
+Set it in Docker's daemon config file:
+
+📄 /etc/docker/daemon.json
+{
+  "storage-driver": "overlay2"
+}
+
+Then restart Docker:
+sudo systemctl restart docker
+
+🧠 Real-World Tips
+    --> Always prefer overlay2 unless you have specific reasons.
+    --> Avoid switching drivers on a running system with containers — it can corrupt data or make images unusable.
+    --> Use vfs only for testing, as it doesn't support layered images.
+
+✅ Storage Driver & Image Layers
+    Each Docker image is made of multiple layers. The storage driver:
+      --> Combines these into one unified filesystem.
+      --> Manages changes (write layer) per container.
+
+🔧 Example: Inspect Layer Paths (Linux)
+      --> ls /var/lib/docker/overlay2
+       
+You’ll see folders for each layer, with contents like:
+      --> diff/ — actual files
+      --> merged/ — what the container sees
+      --> work/ — used by OverlayFS
+--------------------------------------------------------------------
