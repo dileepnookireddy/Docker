@@ -1,0 +1,92 @@
+Docker Network:
+--------------
+Let's go over Docker Networking — how containers communicate, the different network types, and practical examples.
+
+✅ What Is Docker Networking?
+Docker networking allows containers to communicate:
+ --> With each other
+--> With the host
+--> With external networks (like the internet)
+
+🔥 Docker Network Types
+| Network Type      | Description                                   |
+| ----------------- | --------------------------------------------- |
+| **bridge**        | Default network for standalone containers     |
+| **host**          | Shares host’s network stack                   |
+| **none**          | No network interface assigned                 |
+| **overlay**       | For multi-host networking (Swarm mode)        |
+| **macvlan**       | Assigns a MAC address from the host’s network |
+| **custom bridge** | User-defined bridge with better DNS           |
+
+
+✅ 1. Bridge Network (default)
+🔹 Example:
+docker run -d --name container1 nginx
+docker run -d --name container2 alpine sleep 1000
+
+By default, both use the bridge network but can’t reach each other by name.
+
+✅ 2. Create a Custom Bridge Network
+🔹 Better for inter-container communication (supports DNS):
+docker network create mynetwork
+
+Then run containers on it:
+docker run -d --name web --network mynetwork nginx
+docker run -it --name debug --network mynetwork alpine sh
+
+Now from inside debug, you can:
+ping web
+
+✅ Hostname resolution works using Docker DNS.
+
+✅ 3. Host Network
+Container uses host’s network stack (no isolation).
+
+docker run --network host nginx
+⚠️ Not available on Mac/Windows. Useful for performance (e.g., load balancers).
+
+✅ 4. None Network
+No networking at all.
+docker run --network none nginx
+Used for strict isolation.
+
+✅ 5. Overlay Network (Docker Swarm)
+Used to connect containers across multiple Docker hosts.
+docker network create \
+  -d overlay \
+  --attachable \
+  my_overlay
+
+Only available in Swarm mode:
+
+docker swarm init
+
+✅ 6. Macvlan Network
+
+Gives the container its own MAC and IP on the physical network.
+Best for legacy apps needing a real IP.
+
+docker network create -d macvlan \
+  --subnet=192.168.1.0/24 \
+  --gateway=192.168.1.1 \
+  -o parent=eth0 \
+  macvlan_net
+
+🔍 View Networks
+
+docker network ls
+
+🧠 Inspect a Network
+
+docker network inspect mynetwork
+
+✅ Common Use Cases
+| Use Case                             | Network Type  |
+| ------------------------------------ | ------------- |
+| Inter-container communication        | Custom Bridge |
+| High performance, direct host access | Host          |
+| Multi-host container apps            | Overlay       |
+| Legacy apps needing IP on LAN        | Macvlan       |
+
+-----------------------------------------------------------------
+
